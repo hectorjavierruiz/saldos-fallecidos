@@ -1,6 +1,9 @@
 // Necesario en redes corporativas con inspección SSL
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-require('dotenv').config();
+// override:true → el .env tiene prioridad sobre variables del entorno ya
+// definidas (en este equipo ANTHROPIC_API_KEY existe vacía a nivel de Windows
+// y sin esto dotenv no la sobrescribiría, rompiendo la autenticación).
+require('dotenv').config({ override: true });
 const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
@@ -159,11 +162,24 @@ app.post('/api/validar', (req, res, next) => {
     }
 
     const message = await anthropic.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-sonnet-4-6',
       max_tokens: 8192,
-      system: SYSTEM_PROMPT,
+      // El system prompt es idéntico en cada llamada → se cachea para no pagarlo
+      // a precio completo en validaciones repetidas (ventana de 5 min).
+      system: [
+        { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }
+      ],
       messages: [{ role: 'user', content: contentBlocks }]
     });
+
+    // Registrar consumo de tokens para visibilidad de costos
+    const u = message.usage || {};
+    console.log(
+      `[uso] in=${u.input_tokens ?? 0} out=${u.output_tokens ?? 0} ` +
+      `cache_write=${u.cache_creation_input_tokens ?? 0} ` +
+      `cache_read=${u.cache_read_input_tokens ?? 0} ` +
+      `(${docFiles.length} doc, ${emailFiles.length} correo)`
+    );
 
     const rawText = message.content[0].text.trim();
 
@@ -193,7 +209,7 @@ app.post('/api/validar', (req, res, next) => {
       resultado = { resultado: 'ERROR', raw: rawText, error: 'No se pudo parsear la respuesta como JSON.' };
     }
 
-    res.json({ ok: true, data: resultado });
+    res.json({ ok: true, data: resultado, uso: message.usage });
   } catch (err) {
     console.error('Error en /api/validar:', err.message);
     if (err.status) console.error('HTTP status de Anthropic:', err.status);
