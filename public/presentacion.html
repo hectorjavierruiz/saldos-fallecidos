@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saldos Fallecidos – Presentación</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #0a0f1e; overflow: hidden; height: 100%; width: 100%; }
+
+    .slide { display: none; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+    .slide.active { display: flex; }
+
+    /* Transitions */
+    .slide { opacity: 0; transform: translateX(40px); transition: opacity 0.4s ease, transform 0.4s ease; pointer-events: none; }
+    .slide.active { opacity: 1; transform: translateX(0); pointer-events: all; }
+    .slide.exit { opacity: 0; transform: translateX(-40px); }
+
+    /* Gradient backgrounds */
+    .bg-hero    { background: linear-gradient(135deg, #001a4d 0%, #003087 50%, #0050b3 100%); }
+    .bg-dark    { background: linear-gradient(135deg, #0a0f1e 0%, #0d1b35 100%); }
+    .bg-problem { background: linear-gradient(135deg, #1a0a0a 0%, #2d1515 100%); }
+    .bg-sol     { background: linear-gradient(135deg, #0a1a0d 0%, #0d2e14 100%); }
+    .bg-arch    { background: linear-gradient(135deg, #0a0f1e 0%, #0d1535 100%); }
+    .bg-future  { background: linear-gradient(135deg, #0f0a1e 0%, #1a0d35 100%); }
+    .bg-demo    { background: linear-gradient(135deg, #0a1a1a 0%, #0d2e2e 100%); }
+
+    /* Grid dots overlay */
+    .grid-dots::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+
+    /* Glow */
+    .glow-blue  { box-shadow: 0 0 40px rgba(0, 80, 179, 0.4); }
+    .glow-green { box-shadow: 0 0 40px rgba(0, 180, 80, 0.3); }
+    .glow-purple{ box-shadow: 0 0 40px rgba(120, 40, 200, 0.3); }
+
+    /* Cards */
+    .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+    .glass-blue { background: rgba(0,48,135,0.3); border: 1px solid rgba(0,80,179,0.5); }
+    .glass-green { background: rgba(0,100,40,0.25); border: 1px solid rgba(0,180,80,0.4); }
+    .glass-red { background: rgba(120,20,20,0.35); border: 1px solid rgba(200,50,50,0.4); }
+    .glass-purple { background: rgba(80,20,150,0.25); border: 1px solid rgba(140,60,220,0.4); }
+    .glass-amber { background: rgba(120,80,0,0.25); border: 1px solid rgba(220,160,0,0.4); }
+
+    /* Nav */
+    #nav { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 10px; background: rgba(10,15,30,0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; padding: 10px 20px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25); cursor: pointer; transition: all 0.3s; }
+    .dot.active { background: #4d9fff; transform: scale(1.4); }
+    .nav-btn { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; padding: 4px 10px; font-size: 18px; transition: color 0.2s; }
+    .nav-btn:hover { color: white; }
+
+    /* Slide counter */
+    #counter { position: fixed; top: 20px; right: 28px; z-index: 100; color: rgba(255,255,255,0.35); font-size: 12px; font-weight: 500; }
+
+    /* Arch boxes */
+    .arch-box { border-radius: 14px; padding: 14px 18px; text-align: center; min-width: 120px; }
+    .arch-arrow { display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.4); font-size: 22px; }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; gap-x: 6px; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; }
+
+    /* Highlight bar */
+    .hl { background: linear-gradient(90deg, #003087, #0050b3); border-radius: 4px; }
+
+    /* Timeline */
+    .tl-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .tl-line { width: 2px; background: rgba(255,255,255,0.12); flex-shrink: 0; margin: 0 auto; }
+
+    /* Animate in children */
+    .slide.active .anim { animation: popIn 0.4s ease forwards; opacity: 0; }
+    .slide.active .anim:nth-child(1) { animation-delay: 0.1s; }
+    .slide.active .anim:nth-child(2) { animation-delay: 0.2s; }
+    .slide.active .anim:nth-child(3) { animation-delay: 0.3s; }
+    .slide.active .anim:nth-child(4) { animation-delay: 0.4s; }
+    .slide.active .anim:nth-child(5) { animation-delay: 0.5s; }
+    .slide.active .anim:nth-child(6) { animation-delay: 0.6s; }
+    @keyframes popIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body>
+
+<!-- Counter -->
+<div id="counter">1 / 8</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 1 — PORTADA
+═══════════════════════════════════════════════════════════ -->
+<div class="slide active bg-hero grid-dots relative flex-col items-center justify-center text-center px-10">
+  <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none select-none">
+    <svg width="600" height="600" viewBox="0 0 200 200" fill="white"><circle cx="100" cy="100" r="90" stroke="white" stroke-width="1" fill="none"/><circle cx="100" cy="100" r="60" stroke="white" stroke-width="1" fill="none"/><circle cx="100" cy="100" r="30" stroke="white" stroke-width="1" fill="none"/></svg>
+  </div>
+  <div class="relative z-10 max-w-3xl mx-auto space-y-6">
+    <div class="anim flex justify-center mb-4">
+      <img src="bocc.png" alt="Banco de Occidente" class="h-14 drop-shadow-lg" onerror="this.style.display='none'" />
+    </div>
+    <div class="anim">
+      <span class="badge glass text-blue-300" style="border:1px solid rgba(100,160,255,0.3)">VP Jurídica · Innovación con IA</span>
+    </div>
+    <h1 class="anim text-5xl font-extrabold text-white leading-tight tracking-tight">
+      Validación Inteligente de<br/>
+      <span style="background: linear-gradient(90deg,#60a5fa,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Saldos de Fallecidos</span>
+    </h1>
+    <p class="anim text-lg text-blue-200 max-w-xl mx-auto leading-relaxed">
+      Automatización del proceso jurídico de reclamación de saldos mediante Inteligencia Artificial generativa
+    </p>
+    <div class="anim flex justify-center gap-6 pt-2 text-sm text-blue-300">
+      <span class="flex items-center gap-1.5">📅 Mayo 2026</span>
+      <span class="flex items-center gap-1.5">🤖 Claude AI · Anthropic</span>
+      <span class="flex items-center gap-1.5">⚖️ Cumplimiento normativo</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 2 — PROBLEMA
+═══════════════════════════════════════════════════════════ -->
+<div class="slide bg-problem grid-dots relative flex-col items-center justify-center px-12">
+  <div class="relative z-10 max-w-5xl w-full mx-auto">
+    <div class="anim mb-8">
+      <span class="badge glass-red text-red-300">Diagnóstico del problema</span>
+      <h2 class="text-4xl font-bold text-white mt-3">El proceso actual es manual y lento</h2>
+      <p class="text-red-200/70 mt-2">Cada reclamación requiere revisión humana de múltiples documentos con riesgo de error</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div class="anim glass-red rounded-2xl p-6 space-y-3">
+        <div class="text-4xl">⏱️</div>
+        <h3 class="text-white font-semibold text-lg">Proceso lento</h3>
+        <p class="text-red-200/70 text-sm leading-relaxed">Revisión manual de 8–12 documentos por caso. El jurídico dedica horas a verificar checklist y consistencia de datos.</p>
+      </div>
+      <div class="anim glass-red rounded-2xl p-6 space-y-3">
+        <div class="text-4xl">❌</div>
+        <h3 class="text-white font-semibold text-lg">Alto riesgo de error</h3>
+        <p class="text-red-200/70 text-sm leading-relaxed">Inconsistencias no detectadas, documentos faltantes aprobados por descuido, o casos correctos rechazados.</p>
+      </div>
+      <div class="anim glass-red rounded-2xl p-6 space-y-3">
+        <div class="text-4xl">📬</div>
+        <h3 class="text-white font-semibold text-lg">Comunicación dispersa</h3>
+        <p class="text-red-200/70 text-sm leading-relaxed">Correos manuales a cada oficina. Sin trazabilidad. El asesor espera días para saber si el caso fue aprobado.</p>
+      </div>
+    </div>
+    <div class="anim mt-6 glass rounded-xl p-4 flex items-center gap-4">
+      <div class="text-3xl">📋</div>
+      <div>
+        <p class="text-white font-medium text-sm">Marco normativo exigente</p>
+        <p class="text-gray-400 text-xs mt-0.5">Carta Circular 061/2026 · Límite $91.832.170 · Ley 1581/2012 Habeas Data · Requisitos SFC · Autenticaciones notariales obligatorias</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 3 — LA SOLUCIÓN
+═══════════════════════════════════════════════════════════ -->
+<div class="slide bg-sol grid-dots relative flex-col items-center justify-center px-12">
+  <div class="relative z-10 max-w-5xl w-full mx-auto">
+    <div class="anim mb-8">
+      <span class="badge glass-green text-green-300">Solución implementada</span>
+      <h2 class="text-4xl font-bold text-white mt-3">Asistente jurídico con IA generativa</h2>
+      <p class="text-green-200/70 mt-2">El funcionario sube el correo y los PDFs — la IA hace el resto</p>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="anim glass-green rounded-2xl p-5 text-center space-y-2">
+        <div class="text-3xl">📧</div>
+        <p class="text-white font-semibold text-sm">Lee el correo</p>
+        <p class="text-green-300/60 text-xs">.eml · .msg · texto pegado</p>
+      </div>
+      <div class="anim glass-green rounded-2xl p-5 text-center space-y-2">
+        <div class="text-3xl">🔍</div>
+        <p class="text-white font-semibold text-sm">OCR inteligente</p>
+        <p class="text-green-300/60 text-xs">Extrae datos de PDFs escaneados</p>
+      </div>
+      <div class="anim glass-green rounded-2xl p-5 text-center space-y-2">
+        <div class="text-3xl">✅</div>
+        <p class="text-white font-semibold text-sm">Valida checklist</p>
+        <p class="text-green-300/60 text-xs">R1–R9 según perfil del caso</p>
+      </div>
+      <div class="anim glass-green rounded-2xl p-5 text-center space-y-2">
+        <div class="text-3xl">📨</div>
+        <p class="text-white font-semibold text-sm">Genera correo</p>
+        <p class="text-green-300/60 text-xs">APROBADO / NO APROBADO / EN DUDA</p>
+      </div>
+    </div>
+    <div class="anim glass rounded-xl p-5 flex flex-wrap gap-6 items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-10 rounded-full bg-green-400"></div>
+        <div>
+          <p class="text-white font-semibold">Decisión en segundos</p>
+          <p class="text-gray-400 text-xs">vs. horas de revisión manual</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-10 rounded-full bg-blue-400"></div>
+        <div>
+          <p class="text-white font-semibold">100% basado en normativa</p>
+          <p class="text-gray-400 text-xs">Carta Circular 061/2026 integrada</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-10 rounded-full bg-purple-400"></div>
+        <div>
+          <p class="text-white font-semibold">El humano siempre decide</p>
+          <p class="text-gray-400 text-xs">La IA asiste — el abogado aprueba</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 4 — ARQUITECTURA ACTUAL
+═══════════════════════════════════════════════════════════ -->
+<div class="slide bg-arch grid-dots relative flex-col items-center justify-center px-10">
+  <div class="relative z-10 max-w-5xl w-full mx-auto">
+    <div class="anim mb-6">
+      <span class="badge glass-blue text-blue-300">Arquitectura actual</span>
+      <h2 class="text-3xl font-bold text-white mt-2">Despliegue local · Node.js + Claude API</h2>
+    </div>
+
+    <!-- Diagrama -->
+    <div class="anim glass rounded-2xl p-6">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+
+        <!-- Usuario -->
+        <div class="arch-box glass-blue glow-blue flex flex-col items-center gap-2 min-w-[110px]">
+          <div class="text-2xl">👤</div>
+          <p class="text-white font-semibold text-xs">Funcionario</p>
+          <p class="text-blue-300 text-xs">VP Jurídica</p>
+        </div>
+
+        <div class="arch-arrow">→</div>
+
+        <!-- Frontend -->
+        <div class="arch-box glass-blue glow-blue flex flex-col items-center gap-2 min-w-[120px]">
+          <div class="text-2xl">🌐</div>
+          <p class="text-white font-semibold text-xs">Frontend</p>
+          <p class="text-blue-300 text-xs">HTML + Tailwind</p>
+          <span class="badge text-xs" style="background:rgba(0,80,179,0.4);border:1px solid rgba(0,120,255,0.4);color:#90c0ff">localhost:3000</span>
+        </div>
+
+        <div class="arch-arrow">→</div>
+
+        <!-- Backend -->
+        <div class="arch-box glass-blue glow-blue flex flex-col items-center gap-2 min-w-[130px]" style="border-color:rgba(100,200,100,0.4);background:rgba(0,80,30,0.3);">
+          <div class="text-2xl">⚙️</div>
+          <p class="text-white font-semibold text-xs">Backend</p>
+          <p class="text-green-300 text-xs">Node.js · Express</p>
+          <p class="text-gray-400 text-xs mt-1">Multer · PDF · MSG</p>
+        </div>
+
+        <div class="arch-arrow">→</div>
+
+        <!-- Claude API -->
+        <div class="arch-box flex flex-col items-center gap-2 min-w-[130px]" style="background:rgba(80,20,150,0.3);border:1px solid rgba(140,60,220,0.5);">
+          <div class="text-2xl">🤖</div>
+          <p class="text-white font-semibold text-xs">Claude API</p>
+          <p class="text-purple-300 text-xs">Anthropic</p>
+          <p class="text-gray-400 text-xs mt-1">claude-opus-4-7</p>
+        </div>
+
+      </div>
+
+      <!-- Flujo de datos -->
+      <div class="mt-5 grid grid-cols-3 gap-3 text-xs">
+        <div class="glass rounded-lg p-3">
+          <p class="text-blue-300 font-semibold mb-1">① Entrada</p>
+          <p class="text-gray-400">Correo (.msg/.eml/.txt) + PDFs escaneados adjuntos</p>
+        </div>
+        <div class="glass rounded-lg p-3">
+          <p class="text-green-300 font-semibold mb-1">② Procesamiento</p>
+          <p class="text-gray-400">OCR · Extracción · Checklist R1-R9 · Consistencia cruzada</p>
+        </div>
+        <div class="glass rounded-lg p-3">
+          <p class="text-purple-300 font-semibold mb-1">③ Salida</p>
+          <p class="text-gray-400">JSON estructurado · Decisión · Correo de respuesta listo</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="anim mt-4 flex gap-3 flex-wrap">
+      <span class="badge glass text-yellow-300" style="border-color:rgba(220,180,0,0.3)">⚠️ Requiere Node.js local</span>
+      <span class="badge glass text-yellow-300" style="border-color:rgba(220,180,0,0.3)">⚠️ API key en .env local</span>
+      <span class="badge glass text-yellow-300" style="border-color:rgba(220,180,0,0.3)">⚠️ Sin autenticación de usuarios</span>
+      <span class="badge glass text-yellow-300" style="border-color:rgba(220,180,0,0.3)">⚠️ Sin auditoría centralizada</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 5 — ARQUITECTURA FUTURA
+═══════════════════════════════════════════════════════════ -->
+<div class="slide bg-future grid-dots relative flex-col items-center justify-center px-10">
+  <div class="relative z-10 max-w-5xl w-full mx-auto">
+    <div class="anim mb-5">
+      <span class="badge glass-purple text-purple-300">Arquitectura objetivo</span>
+      <h2 class="text-3xl font-bold text-white mt-2">Integración con Amazon Bedrock vía API Gateway</h2>
+      <p class="text-purple-200/60 text-sm mt-1">Despliegue empresarial · Seguro · Escalable · Auditable</p>
+    </div>
+
+    <!-- Diagrama futuro -->
+    <div class="anim glass rounded-2xl p-5">
+      <div class="flex items-stretch gap-2 overflow-x-auto">
+
+        <!-- Usuario -->
+        <div class="arch-box glass-blue flex flex-col items-center gap-1.5 min-w-[95px]">
+          <div class="text-xl">👤</div>
+          <p class="text-white font-semibold text-xs">Funcionario</p>
+          <p class="text-blue-300 text-xs">AD / SSO</p>
+        </div>
+        <div class="arch-arrow text-sm">→</div>
+
+        <!-- Frontend S3/CDN -->
+        <div class="arch-box glass-blue flex flex-col items-center gap-1.5 min-w-[100px]">
+          <div class="text-xl">☁️</div>
+          <p class="text-white font-semibold text-xs">Frontend</p>
+          <p class="text-blue-300 text-xs">S3 + CloudFront</p>
+        </div>
+        <div class="arch-arrow text-sm">→</div>
+
+        <!-- API GW -->
+        <div class="arch-box flex flex-col items-center gap-1.5 min-w-[110px]" style="background:rgba(220,120,0,0.2);border:1px solid rgba(255,160,0,0.5)">
+          <div class="text-xl">🔀</div>
+          <p class="text-white font-semibold text-xs">API Gateway</p>
+          <p class="text-amber-300 text-xs">AWS</p>
+          <p class="text-gray-400 text-xs">Auth · Rate limit</p>
+        </div>
+        <div class="arch-arrow text-sm">→</div>
+
+        <!-- Lambda -->
+        <div class="arch-box flex flex-col items-center gap-1.5 min-w-[100px]" style="background:rgba(220,120,0,0.2);border:1px solid rgba(255,160,0,0.5)">
+          <div class="text-xl">λ</div>
+          <p class="text-white font-semibold text-xs">Lambda</p>
+          <p class="text-amber-300 text-xs">Orquestador</p>
+          <p class="text-gray-400 text-xs">S3 · Logs</p>
+        </div>
+        <div class="arch-arrow text-sm">→</div>
+
+        <!-- Bedrock -->
+        <div class="arch-box flex flex-col items-center gap-1.5 min-w-[115px]" style="background:rgba(80,20,150,0.35);border:1px solid rgba(160,80,255,0.6)">
+          <div class="text-xl">🤖</div>
+          <p class="text-white font-semibold text-xs">Amazon Bedrock</p>
+          <p class="text-purple-300 text-xs">Claude 3.x</p>
+          <p class="text-gray-400 text-xs">Managed AI</p>
+        </div>
+        <div class="arch-arrow text-sm">→</div>
+
+        <!-- Sistemas internos -->
+        <div class="arch-box glass-blue flex flex-col items-center gap-1.5 min-w-[100px]">
+          <div class="text-xl">🏦</div>
+          <p class="text-white font-semibold text-xs">Core Banco</p>
+          <p class="text-blue-300 text-xs">OnBase · SAP</p>
+        </div>
+
+      </div>
+
+      <!-- Capas -->
+      <div class="mt-4 grid grid-cols-4 gap-3 text-xs">
+        <div class="rounded-lg p-2.5" style="background:rgba(0,80,179,0.2);border:1px solid rgba(0,120,255,0.2)">
+          <p class="text-blue-300 font-semibold mb-1">🔐 Seguridad</p>
+          <p class="text-gray-400">Cognito SSO · IAM Roles · Cifrado KMS · VPC privada</p>
+        </div>
+        <div class="rounded-lg p-2.5" style="background:rgba(220,120,0,0.15);border:1px solid rgba(255,160,0,0.25)">
+          <p class="text-amber-300 font-semibold mb-1">📂 Almacenamiento</p>
+          <p class="text-gray-400">S3 documentos · DynamoDB auditoría · CloudWatch logs</p>
+        </div>
+        <div class="rounded-lg p-2.5" style="background:rgba(80,20,150,0.2);border:1px solid rgba(160,80,255,0.25)">
+          <p class="text-purple-300 font-semibold mb-1">🤖 IA Gestionada</p>
+          <p class="text-gray-400">Bedrock sin gestionar infra · Escala automática · SLA</p>
+        </div>
+        <div class="rounded-lg p-2.5" style="background:rgba(0,100,40,0.2);border:1px solid rgba(0,180,80,0.25)">
+          <p class="text-green-300 font-semibold mb-1">🔗 Integración</p>
+          <p class="text-gray-400">OnBase · Correo Exchange · Notificaciones MS Teams</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 6 — ROADMAP
+═══════════════════════════════════════════════════════════ -->
+<div class="slide bg-dark grid-dots relative flex-col items-center justify-center px-12">
+  <div class="relative z-10 max-w-4xl w-full mx-auto">
+    <div class="anim mb-7">
+      <span class="badge glass text-gray-300">Hoja de ruta</span>
+      <h2 class="text-3xl font-bold text-white mt-2">Del prototipo al sistema empresarial</h2>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Fase 1 -->
+      <div class="anim flex gap-4 items-start">
+        <div class="flex flex-col items-center">
+          <div class="tl-dot bg-green-400"></div>
+          <div class="tl-line h-14"></div>
+        </div>
+        <div class="glass-green rounded-xl p-4 flex-1 -mt-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="badge text-xs text-green-300" style="background:rgba(0,100,40,0.4);border:1px solid rgba(0,180,80,0.4)">✅ Fase 1 — Completada</span>
+            <span class="text-gray-500 text-xs">Mayo 2026</span>
+          </div>
+          <p class="text-white font-semibold text-sm">Prototipo funcional local</p>
+          <p class="text-green-200/60 text-xs mt-0.5">Node.js · Express · Claude API · Frontend HTML · Validación completa R1-R9 · Soporte .msg/.eml/PDF</p>
+        </div>
+      </div>
+
+      <!-- Fase 2 -->
+      <div class="anim flex gap-4 items-start">
+        <div class="flex flex-col items-center">
+          <div class="tl-dot bg-amber-400"></div>
+          <div class="tl-line h-14"></div>
+        </div>
+        <div class="glass-amber rounded-xl p-4 flex-1 -mt-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="badge text-xs text-amber-300" style="background:rgba(120,80,0,0.4);border:1px solid rgba(220,160,0,0.4)">🔄 Fase 2 — En planificación</span>
+            <span class="text-gray-500 text-xs">Q3 2026</span>
+          </div>
+          <p class="text-white font-semibold text-sm">Despliegue AWS + API Gateway</p>
+          <p class="text-amber-200/60 text-xs mt-0.5">Lambda · S3 · API Gateway · Amazon Bedrock (Claude) · Cognito SSO · Auditoría DynamoDB</p>
+        </div>
+      </div>
+
+      <!-- Fase 3 -->
+      <div class="anim flex gap-4 items-start">
+        <div class="flex flex-col items-center">
+          <div class="tl-dot bg-blue-400"></div>
+          <div class="tl-line h-14"></div>
+        </div>
+        <div class="glass-blue rounded-xl p-4 flex-1 -mt-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="badge text-xs text-blue-300" style="background:rgba(0,48,135,0.4);border:1px solid rgba(0,80,179,0.4)">📋 Fase 3 — Roadmap</span>
+            <span class="text-gray-500 text-xs">Q4 2026</span>
+          </div>
+          <p class="text-white font-semibold text-sm">Integración total · Fase B automática</p>
+          <p class="text-blue-200/60 text-xs mt-0.5">Lectura directa de correo Exchange · Generación automática del concepto legal (Fase B) · OnBase · MS Teams alerts</p>
+        </div>
+      </div>
+
+      <!-- Fase 4 -->
+      <div class="anim flex gap-4 items-start">
+        <div class="flex flex-col items-center">
+          <div class="tl-dot bg-purple-400"></div>
+        </div>
+        <div class="glass-purple rounded-xl p-4 flex-1 -mt-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="badge text-xs text-purple-300" style="background:rgba(80,20,150,0.4);border:1px solid rgba(140,60,220,0.4)">🚀 Fase 4 — Visión</span>
+            <span class="text-gray-500 text-xs">2027</span>
+          </div>
+          <p class="text-white font-semibold text-sm">Automatización end-to-end + otros procesos jurídicos</p>
+          <p class="text-purple-200/60 text-xs mt-0.5">Pipeline 100% automático · Extensión a embargos, poderes, garantías · Dashboard gerencial de métricas</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 7 — IMPACTO Y BENEFICIOS
+═══════════════════════════════════════════════════════════ -->
+<div class="slide bg-dark grid-dots relative flex-col items-center justify-center px-12">
+  <div class="relative z-10 max-w-5xl w-full mx-auto">
+    <div class="anim mb-7">
+      <span class="badge glass text-gray-300">Valor generado</span>
+      <h2 class="text-3xl font-bold text-white mt-2">Impacto y beneficios</h2>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="anim glass rounded-2xl p-5 text-center space-y-2 glow-blue">
+        <p class="text-4xl font-extrabold text-blue-400">-90%</p>
+        <p class="text-white font-semibold text-sm">Tiempo de revisión</p>
+        <p class="text-gray-500 text-xs">De horas a segundos por caso</p>
+      </div>
+      <div class="anim glass rounded-2xl p-5 text-center space-y-2">
+        <p class="text-4xl font-extrabold text-green-400">100%</p>
+        <p class="text-white font-semibold text-sm">Checklist cubierto</p>
+        <p class="text-gray-500 text-xs">R1–R9 según perfil exacto</p>
+      </div>
+      <div class="anim glass rounded-2xl p-5 text-center space-y-2">
+        <p class="text-4xl font-extrabold text-purple-400">3</p>
+        <p class="text-white font-semibold text-sm">Decisiones posibles</p>
+        <p class="text-gray-500 text-xs">Aprobado · No aprobado · En duda</p>
+      </div>
+      <div class="anim glass rounded-2xl p-5 text-center space-y-2">
+        <p class="text-4xl font-extrabold text-amber-400">0</p>
+        <p class="text-white font-semibold text-sm">Envíos automáticos</p>
+        <p class="text-gray-500 text-xs">El humano siempre revisa y envía</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="anim glass rounded-xl p-4 space-y-2">
+        <p class="text-green-400 font-semibold text-sm flex items-center gap-2">⚖️ Cumplimiento normativo</p>
+        <p class="text-gray-400 text-xs leading-relaxed">Reglas de la Carta Circular 061/2026 y Ley 1581/2012 embebidas directamente en el modelo.</p>
+      </div>
+      <div class="anim glass rounded-xl p-4 space-y-2">
+        <p class="text-blue-400 font-semibold text-sm flex items-center gap-2">🧾 Trazabilidad completa</p>
+        <p class="text-gray-400 text-xs leading-relaxed">Cada validación genera un registro estructurado con checklist, consistencia y decisión justificada.</p>
+      </div>
+      <div class="anim glass rounded-xl p-4 space-y-2">
+        <p class="text-purple-400 font-semibold text-sm flex items-center gap-2">🔒 Control humano total</p>
+        <p class="text-gray-400 text-xs leading-relaxed">La IA asiste y recomienda. El abogado revisa, ajusta y decide enviar. Sin automatismos no supervisados.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SLIDE 8 — CIERRE
+═══════════════════════════════════════════════════════════ -->
+<div class="slide bg-hero grid-dots relative flex-col items-center justify-center text-center px-10">
+  <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+    <svg width="700" height="700" viewBox="0 0 200 200" fill="white"><circle cx="100" cy="100" r="90" stroke="white" stroke-width="0.5" fill="none"/><circle cx="100" cy="100" r="70" stroke="white" stroke-width="0.5" fill="none"/><circle cx="100" cy="100" r="50" stroke="white" stroke-width="0.5" fill="none"/><circle cx="100" cy="100" r="30" stroke="white" stroke-width="0.5" fill="none"/></svg>
+  </div>
+  <div class="relative z-10 max-w-3xl mx-auto space-y-6">
+    <div class="anim flex justify-center">
+      <img src="bocc.png" alt="Banco de Occidente" class="h-12 drop-shadow-lg" onerror="this.style.display='none'" />
+    </div>
+    <h2 class="anim text-4xl font-extrabold text-white leading-tight">
+      IA jurídica al servicio<br/>
+      <span style="background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent">del cliente y del banco</span>
+    </h2>
+    <p class="anim text-blue-200 text-base max-w-lg mx-auto leading-relaxed">
+      Un proceso más ágil, seguro y consistente. Menos tiempo operativo, más tiempo para el trabajo jurídico de alto valor.
+    </p>
+    <div class="anim flex flex-wrap justify-center gap-3 pt-2">
+      <span class="badge glass-blue text-blue-300">🤖 Claude AI · Anthropic</span>
+      <span class="badge glass-purple text-purple-300">☁️ Amazon Bedrock (roadmap)</span>
+      <span class="badge glass-green text-green-300">⚖️ VP Jurídica</span>
+    </div>
+    <div class="anim pt-4 glass rounded-2xl p-5 max-w-sm mx-auto">
+      <p class="text-gray-400 text-xs mb-1">Demo disponible en</p>
+      <p class="text-white font-mono font-semibold">http://localhost:3000</p>
+      <p class="text-gray-500 text-xs mt-2">Presentación: <span class="text-blue-300">localhost:3000/presentacion.html</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ NAV ══════════════════════ -->
+<div id="nav">
+  <button class="nav-btn" onclick="prev()">‹</button>
+  <div id="dots"></div>
+  <button class="nav-btn" onclick="next()">›</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+
+  // Build dots
+  const dotsEl = document.getElementById('dots');
+  for (let i = 0; i < totalSlides; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current - (current !== n ? 0 : 0)].classList.remove('exit'), 400);
+    current = (n + totalSlides) % totalSlides;
+    slides[current].classList.add('active');
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    document.getElementById('counter').textContent = `${current + 1} / ${totalSlides}`;
+    // Remove exit from all after transition
+    setTimeout(() => slides.forEach(s => s.classList.remove('exit')), 450);
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+  });
+
+  // Touch swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => tx = e.touches[0].clientX);
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) dx < 0 ? next() : prev();
+  });
+</script>
+</body>
+</html>

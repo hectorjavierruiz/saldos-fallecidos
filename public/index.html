@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saldos Fallecidos – Banco de Occidente</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+
+    .drop-active { border-color: #003087 !important; background-color: #eff6ff !important; }
+    .file-chip { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+    .spinner { border:3px solid #e5e7eb; border-top-color:#003087; border-radius:50%; width:24px; height:24px; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .slide-in { animation: slideIn 0.35s ease; }
+    @keyframes slideIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+
+    pre { white-space:pre-wrap; word-break:break-word; }
+
+    .tag-email { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+    .tag-pdf   { background:#eff6ff; color:#1e40af; border-color:#bfdbfe; }
+    .tag-img   { background:#f0fdf4; color:#166534; border-color:#bbf7d0; }
+
+    .step-num { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-[#003087]">
+  <div class="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">
+    <img src="bocc.png" alt="Banco de Occidente" class="h-9 select-none" />
+    <div class="border-l border-blue-400 pl-3">
+      <h1 class="text-white font-semibold text-base leading-tight">Validación de Saldos – Persona Fallecida</h1>
+      <p class="text-blue-200 text-xs">VP Jurídica · Banco de Occidente</p>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-4xl mx-auto px-6 py-8 space-y-5">
+
+  <!-- Instrucciones -->
+  <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 text-sm text-blue-800">
+    <p class="font-semibold mb-2 flex items-center gap-2">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      ¿Cómo funciona?
+    </p>
+    <div class="flex flex-col sm:flex-row gap-3 text-xs">
+      <div class="flex items-start gap-2">
+        <span class="step-num bg-blue-200 text-blue-800 shrink-0">1</span>
+        <span>Sube el <strong>correo de la oficina</strong> (.eml, .msg o .txt) o pega el texto directamente.</span>
+      </div>
+      <div class="flex items-start gap-2">
+        <span class="step-num bg-blue-200 text-blue-800 shrink-0">2</span>
+        <span>Adjunta los <strong>documentos PDF</strong> escaneados (registros civiles, cédulas, formulario, poderes…).</span>
+      </div>
+      <div class="flex items-start gap-2">
+        <span class="step-num bg-blue-200 text-blue-800 shrink-0">3</span>
+        <span>Claude extrae toda la información, valida el caso y genera el <strong>correo de respuesta</strong>.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload card -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+
+    <!-- Zona correo -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        Correo de la oficina
+      </label>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 mb-3 bg-gray-100 rounded-lg p-1 w-fit">
+        <button id="tabFileBtn" onclick="switchTab('file')"
+          class="tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white shadow-sm text-gray-800">
+          Adjuntar archivo
+        </button>
+        <button id="tabTextBtn" onclick="switchTab('text')"
+          class="tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-gray-500 hover:text-gray-700">
+          Pegar texto
+        </button>
+      </div>
+
+      <!-- Tab: archivo correo -->
+      <div id="tabFile">
+        <div id="dropEmail"
+          class="border-2 border-dashed border-amber-300 rounded-xl p-6 text-center cursor-pointer hover:border-amber-500 hover:bg-amber-50 transition-colors"
+          onclick="document.getElementById('emailInput').click()">
+          <div class="flex flex-col items-center gap-1.5 pointer-events-none">
+            <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            <p class="text-sm text-gray-600">Arrastra el correo aquí o <span class="text-amber-600 font-medium">selecciona el archivo</span></p>
+            <p class="text-xs text-gray-400">.eml · .msg · .txt</p>
+          </div>
+        </div>
+        <input id="emailInput" type="file" accept=".eml,.msg,.txt" class="hidden" />
+        <div id="emailFileChip" class="mt-2"></div>
+      </div>
+
+      <!-- Tab: texto pegado -->
+      <div id="tabText" class="hidden">
+        <textarea id="cuerpoCorreo" rows="6"
+          placeholder="Pega aquí el cuerpo del correo enviado por la oficina (asunto, destinatario, cuerpo completo con datos del caso)..."
+          class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#003087]/30 focus:border-[#003087] resize-none text-gray-700 placeholder-gray-400"></textarea>
+      </div>
+    </div>
+
+    <!-- Divisor -->
+    <div class="border-t border-gray-100"></div>
+
+    <!-- Zona documentos -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Documentos adjuntos <span class="text-red-400">*</span>
+        <span class="ml-1 text-xs font-normal text-gray-400">(registros civiles, cédulas, formulario, poderes…)</span>
+      </label>
+
+      <div id="dropDocs"
+        class="border-2 border-dashed border-blue-200 rounded-xl p-8 text-center cursor-pointer hover:border-[#003087] hover:bg-blue-50 transition-colors"
+        onclick="document.getElementById('docsInput').click()">
+        <div class="flex flex-col items-center gap-2 pointer-events-none">
+          <svg class="w-10 h-10 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          <p class="text-sm text-gray-500">Arrastra los PDFs aquí o <span class="text-[#003087] font-medium">haz clic para seleccionar</span></p>
+          <p class="text-xs text-gray-400">PDF e imágenes · Máximo 20 MB</p>
+        </div>
+      </div>
+      <input id="docsInput" type="file" multiple accept=".pdf,image/*" class="hidden" />
+      <div id="docsList" class="mt-3 flex flex-wrap gap-2"></div>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex items-center gap-3 pt-1">
+      <button id="btnValidar" onclick="validar()"
+        class="bg-[#003087] hover:bg-[#00236b] text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Analizar y validar
+      </button>
+      <button onclick="limpiar()" class="text-gray-500 hover:text-gray-700 text-sm px-4 py-2.5 rounded-lg hover:bg-gray-100 transition-colors">
+        Limpiar todo
+      </button>
+      <div id="loadingSpinner" class="hidden"><div class="spinner"></div></div>
+      <span id="loadingText" class="hidden text-sm text-gray-500 italic">Extrayendo datos y validando documentos…</span>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="errorCard" class="hidden bg-red-50 border border-red-200 rounded-2xl p-5">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div>
+        <p class="text-sm font-semibold text-red-700">Error al procesar el caso</p>
+        <p id="errorMsg" class="text-sm text-red-600 mt-0.5"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="hidden space-y-5 slide-in">
+
+    <!-- Veredicto -->
+    <div id="verdictCard" class="rounded-2xl p-5 border flex items-start gap-4">
+      <div id="verdictIcon" class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl"></div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h2 id="verdictTitle" class="text-lg font-bold"></h2>
+          <span id="verdictBadge" class="px-3 py-0.5 rounded-full text-xs font-semibold"></span>
+        </div>
+        <p id="verdictSub" class="text-sm mt-1"></p>
+      </div>
+    </div>
+
+    <!-- Datos extraídos automáticamente -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-800 text-sm mb-4 flex items-center gap-2">
+        <svg class="w-4 h-4 text-[#003087]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582 4 8 4"/>
+        </svg>
+        Datos extraídos del correo y documentos
+        <span class="ml-auto text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Generado automáticamente</span>
+      </h3>
+      <div id="resumenCaso" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm"></div>
+    </div>
+
+    <!-- Checklist + Consistencia -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 text-sm mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-[#003087]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+          Checklist documental
+        </h3>
+        <div id="checklist" class="space-y-1.5 text-sm"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 text-sm mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-[#003087]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          Validación de consistencia
+        </h3>
+        <div id="consistencia" class="space-y-1.5 text-sm"></div>
+      </div>
+    </div>
+
+    <!-- Correo sugerido -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-[#003087]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          Correo de respuesta sugerido
+        </h3>
+        <button onclick="copiarCorreo()" id="btnCopiar"
+          class="bg-[#003087] hover:bg-[#00236b] text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+          </svg>
+          Copiar
+        </button>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-gray-200 bg-gray-100">
+          <span class="text-xs text-gray-500 font-medium">Asunto: </span>
+          <span id="correoAsunto" class="text-xs font-semibold text-gray-800"></span>
+        </div>
+        <pre id="correoCuerpo" class="p-4 text-xs text-gray-700 leading-relaxed font-sans max-h-80 overflow-y-auto"></pre>
+      </div>
+
+      <p class="text-xs text-gray-400 mt-2.5 flex items-center gap-1">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        El envío siempre lo realiza un funcionario del área jurídica.
+      </p>
+    </div>
+
+  </div>
+</main>
+
+<footer class="text-center text-xs text-gray-400 py-6 mt-4">
+  Banco de Occidente · VP Jurídica · Herramienta interna
+</footer>
+
+<script>
+  // ── Estado ──────────────────────────────────────────────
+  let emailFile = null;
+  let docFiles  = [];
+  let activeTab = 'file';
+
+  // ── Tabs correo ─────────────────────────────────────────
+  function switchTab(tab) {
+    activeTab = tab;
+    const isFile = tab === 'file';
+    document.getElementById('tabFile').classList.toggle('hidden', !isFile);
+    document.getElementById('tabText').classList.toggle('hidden', isFile);
+    document.getElementById('tabFileBtn').className = isFile
+      ? 'tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white shadow-sm text-gray-800'
+      : 'tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-gray-500 hover:text-gray-700';
+    document.getElementById('tabTextBtn').className = !isFile
+      ? 'tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-colors bg-white shadow-sm text-gray-800'
+      : 'tab-btn px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-gray-500 hover:text-gray-700';
+  }
+
+  // ── Drop zone correo ─────────────────────────────────────
+  const dropEmail = document.getElementById('dropEmail');
+  const emailInput = document.getElementById('emailInput');
+
+  dropEmail.addEventListener('dragover', e => { e.preventDefault(); dropEmail.classList.add('drop-active'); });
+  dropEmail.addEventListener('dragleave', () => dropEmail.classList.remove('drop-active'));
+  dropEmail.addEventListener('drop', e => {
+    e.preventDefault(); dropEmail.classList.remove('drop-active');
+    const f = e.dataTransfer.files[0];
+    if (f) setEmailFile(f);
+  });
+  emailInput.addEventListener('change', () => { if (emailInput.files[0]) setEmailFile(emailInput.files[0]); emailInput.value = ''; });
+
+  function setEmailFile(f) {
+    emailFile = f;
+    const chip = document.getElementById('emailFileChip');
+    chip.innerHTML = `
+      <div class="file-chip inline-flex items-center gap-1.5 tag-email border text-xs px-3 py-1.5 rounded-lg font-medium">
+        <span>✉️</span>
+        <span class="truncate max-w-[200px]" title="${f.name}">${f.name}</span>
+        <span class="opacity-60">${(f.size/1024).toFixed(0)} KB</span>
+        <button onclick="removeEmailFile()" class="ml-1 hover:text-red-600 transition-colors text-sm leading-none">×</button>
+      </div>`;
+  }
+  function removeEmailFile() { emailFile = null; document.getElementById('emailFileChip').innerHTML = ''; }
+
+  // ── Drop zone documentos ─────────────────────────────────
+  const dropDocs = document.getElementById('dropDocs');
+  const docsInput = document.getElementById('docsInput');
+
+  dropDocs.addEventListener('dragover', e => { e.preventDefault(); dropDocs.classList.add('drop-active'); });
+  dropDocs.addEventListener('dragleave', () => dropDocs.classList.remove('drop-active'));
+  dropDocs.addEventListener('drop', e => {
+    e.preventDefault(); dropDocs.classList.remove('drop-active');
+    addDocs(Array.from(e.dataTransfer.files));
+  });
+  docsInput.addEventListener('change', () => { addDocs(Array.from(docsInput.files)); docsInput.value = ''; });
+
+  function addDocs(newFiles) {
+    const accepted = newFiles.filter(f => f.type === 'application/pdf' || f.type.startsWith('image/'));
+    docFiles = [...docFiles, ...accepted].slice(0, 18);
+    renderDocsList();
+  }
+
+  function renderDocsList() {
+    const list = document.getElementById('docsList');
+    list.innerHTML = '';
+    docFiles.forEach((f, i) => {
+      const isPdf = f.type === 'application/pdf';
+      const cls = isPdf ? 'tag-pdf' : 'tag-img';
+      const icon = isPdf ? '📄' : '🖼️';
+      const chip = document.createElement('div');
+      chip.className = `file-chip inline-flex items-center gap-1.5 ${cls} border text-xs px-3 py-1.5 rounded-lg font-medium`;
+      chip.innerHTML = `
+        <span>${icon}</span>
+        <span class="truncate max-w-[160px]" title="${f.name}">${f.name}</span>
+        <span class="opacity-60">${(f.size/1024).toFixed(0)} KB</span>
+        <button onclick="removeDoc(${i})" class="ml-1 hover:text-red-600 transition-colors text-sm leading-none">×</button>`;
+      list.appendChild(chip);
+    });
+  }
+  function removeDoc(i) { docFiles.splice(i, 1); renderDocsList(); }
+
+  // ── Validar ──────────────────────────────────────────────
+  async function validar() {
+    hideAll();
+
+    if (!docFiles.length) { showError('Debe adjuntar al menos un documento PDF.'); return; }
+
+    const cuerpoCorreo = document.getElementById('cuerpoCorreo').value.trim();
+    const tieneCorreo = emailFile || cuerpoCorreo;
+    if (!tieneCorreo) { showError('Adjunte el correo de la oficina (.eml/.msg/.txt) o pegue el texto del correo.'); return; }
+
+    const btn = document.getElementById('btnValidar');
+    btn.disabled = true;
+    document.getElementById('loadingSpinner').classList.remove('hidden');
+    document.getElementById('loadingText').classList.remove('hidden');
+
+    const fd = new FormData();
+    if (emailFile) fd.append('archivos', emailFile);
+    docFiles.forEach(f => fd.append('archivos', f));
+    if (cuerpoCorreo) fd.append('cuerpo_correo', cuerpoCorreo);
+
+    try {
+      const res  = await fetch('/api/validar', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'Error del servidor');
+      renderResults(json.data);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      btn.disabled = false;
+      document.getElementById('loadingSpinner').classList.add('hidden');
+      document.getElementById('loadingText').classList.add('hidden');
+    }
+  }
+
+  // ── Render resultados ────────────────────────────────────
+  function renderResults(d) {
+    if (!d || d.resultado === 'ERROR') {
+      showError((d?.error || 'No se pudo procesar la respuesta.') + (d?.raw ? ' — ' + d.raw.substring(0, 200) : ''));
+      return;
+    }
+
+    const verdict = d.resultado;
+    const vc = document.getElementById('verdictCard');
+    const vi = document.getElementById('verdictIcon');
+    const vt = document.getElementById('verdictTitle');
+    const vb = document.getElementById('verdictBadge');
+    const vs = document.getElementById('verdictSub');
+
+    if (verdict === 'APROBADO') {
+      vc.className = 'rounded-2xl p-5 border flex items-start gap-4 bg-green-50 border-green-200';
+      vi.className = 'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-green-100';
+      vi.textContent = '✅';
+      vt.textContent = 'Documentación aprobada';
+      vt.className = 'text-lg font-bold text-green-800';
+      vb.textContent = 'APROBADO';
+      vb.className = 'px-3 py-0.5 rounded-full text-xs font-semibold bg-green-200 text-green-800';
+      vs.textContent = 'Todos los documentos requeridos están presentes y la información es consistente.';
+      vs.className = 'text-sm mt-1 text-green-700';
+    } else if (verdict === 'NO APROBADO') {
+      vc.className = 'rounded-2xl p-5 border flex items-start gap-4 bg-red-50 border-red-200';
+      vi.className = 'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-red-100';
+      vi.textContent = '❌';
+      vt.textContent = 'Documentación no aprobada';
+      vt.className = 'text-lg font-bold text-red-800';
+      vb.textContent = 'NO APROBADO';
+      vb.className = 'px-3 py-0.5 rounded-full text-xs font-semibold bg-red-200 text-red-800';
+      vs.textContent = d.documentos_faltantes?.length ? 'Faltan: ' + d.documentos_faltantes.join(', ') : 'Revise el checklist.';
+      vs.className = 'text-sm mt-1 text-red-700';
+    } else {
+      vc.className = 'rounded-2xl p-5 border flex items-start gap-4 bg-yellow-50 border-yellow-200';
+      vi.className = 'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-yellow-100';
+      vi.textContent = '⚠️';
+      vt.textContent = 'Caso en duda – Revisión manual requerida';
+      vt.className = 'text-lg font-bold text-yellow-800';
+      vb.textContent = 'EN DUDA';
+      vb.className = 'px-3 py-0.5 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-800';
+      vs.textContent = d.inconsistencias?.length ? 'Inconsistencias: ' + d.inconsistencias.join('; ') : 'Se detectaron inconsistencias.';
+      vs.className = 'text-sm mt-1 text-yellow-700';
+    }
+
+    // Datos extraídos
+    const rc = d.resumen_caso || {};
+    const fallecido = rc.fallecido || {};
+    const solicitantes = rc.solicitantes || [];
+    const campo = (label, val) => val ? `<div class="bg-gray-50 rounded-lg px-3 py-2.5"><p class="text-xs text-gray-500">${label}</p><p class="font-medium text-gray-800 mt-0.5">${val}</p></div>` : '';
+    document.getElementById('resumenCaso').innerHTML = `
+      ${campo('Fallecido', fallecido.nombre)}
+      ${campo('C.C. fallecido', fallecido.cedula)}
+      ${campo('Fecha de defunción', fallecido.fecha_defuncion)}
+      ${solicitantes.map(s => `
+        ${campo('Solicitante', s.nombre)}
+        ${campo('C.C. solicitante', s.cedula)}
+        ${campo('Parentesco', s.parentesco)}
+      `).join('')}
+      ${rc.productos?.length ? `<div class="bg-blue-50 rounded-lg px-3 py-2.5 sm:col-span-2"><p class="text-xs text-blue-600">Productos reclamados</p><p class="font-medium text-blue-800 mt-0.5">${rc.productos.join(' · ')}</p></div>` : ''}
+      ${campo('Oficina', rc.oficina)}
+      ${campo('Asesor', rc.asesor)}
+    `;
+
+    // Checklist
+    document.getElementById('checklist').innerHTML = (d.checklist || []).map(item => {
+      const ok = item.estado === 'PRESENTE';
+      const warn = item.estado === 'ILEGIBLE';
+      const cls = ok ? 'border-green-200 bg-green-50 text-green-700' : warn ? 'border-yellow-200 bg-yellow-50 text-yellow-700' : 'border-red-200 bg-red-50 text-red-700';
+      const icon = ok ? '✓' : warn ? '!' : '✗';
+      return `<div class="flex items-start gap-2 p-2.5 rounded-lg border ${cls}">
+        <span class="font-bold text-sm shrink-0 w-4 text-center leading-tight">${icon}</span>
+        <div class="min-w-0">
+          <p class="font-medium text-xs leading-snug">${item.codigo} – ${item.nombre}</p>
+          ${item.observacion ? `<p class="text-xs opacity-75 mt-0.5 leading-snug">${item.observacion}</p>` : ''}
+        </div>
+      </div>`;
+    }).join('') || '<p class="text-gray-400 text-xs">Sin datos.</p>';
+
+    // Consistencia
+    document.getElementById('consistencia').innerHTML = (d.consistencia || []).map(c => {
+      const ok = c.estado === 'OK';
+      const cls = ok ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700';
+      return `<div class="flex items-start gap-2 p-2.5 rounded-lg border ${cls}">
+        <span class="font-bold text-sm shrink-0">${ok ? '✓' : '✗'}</span>
+        <div>
+          <p class="font-medium text-xs leading-snug">${c.campo}</p>
+          ${c.detalle ? `<p class="text-xs opacity-75 mt-0.5 leading-snug">${c.detalle}</p>` : ''}
+        </div>
+      </div>`;
+    }).join('') || '<p class="text-gray-400 text-xs">Sin datos.</p>';
+
+    // Correo
+    const correo = d.correo_sugerido || {};
+    document.getElementById('correoAsunto').textContent = correo.asunto || '';
+    document.getElementById('correoCuerpo').textContent = correo.cuerpo || '';
+
+    document.getElementById('results').classList.remove('hidden');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── Copiar correo ────────────────────────────────────────
+  async function copiarCorreo() {
+    const asunto = document.getElementById('correoAsunto').textContent;
+    const cuerpo = document.getElementById('correoCuerpo').textContent;
+    await navigator.clipboard.writeText(`Asunto: ${asunto}\n\n${cuerpo}`);
+    const btn = document.getElementById('btnCopiar');
+    btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copiado`;
+    setTimeout(() => {
+      btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg> Copiar`;
+    }, 2000);
+  }
+
+  // ── Utilidades ───────────────────────────────────────────
+  function hideAll() {
+    document.getElementById('results').classList.add('hidden');
+    document.getElementById('errorCard').classList.add('hidden');
+  }
+  function showError(msg) {
+    document.getElementById('errorMsg').textContent = msg;
+    document.getElementById('errorCard').classList.remove('hidden');
+    document.getElementById('errorCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function limpiar() {
+    emailFile = null; docFiles = [];
+    document.getElementById('emailFileChip').innerHTML = '';
+    document.getElementById('cuerpoCorreo').value = '';
+    renderDocsList();
+    hideAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
