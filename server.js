@@ -16,11 +16,19 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
-const anthropicOptions = { apiKey: process.env.ANTHROPIC_API_KEY };
-if (proxyUrl) {
-  console.log('Usando proxy:', proxyUrl);
-  anthropicOptions.httpAgent = new HttpsProxyAgent(proxyUrl);
+const primaryApiKey = process.env.ANTHROPIC_API_KEY;
+const secondaryApiKey = process.env.SECONDARY_API_KEY;
+
+function createAnthropicClient(apiKey) {
+  const options = { apiKey };
+  if (proxyUrl) {
+    options.httpAgent = new HttpsProxyAgent(proxyUrl);
+  }
+  return new Anthropic(options);
 }
+
+let anthropic = createAnthropicClient(primaryApiKey);
+let usingSecondaryKey = false;
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -36,8 +44,6 @@ const upload = multer({
   // Aceptar todo — validamos por extensión en el handler
   fileFilter: (req, file, cb) => cb(null, true)
 });
-
-const anthropic = new Anthropic(anthropicOptions);
 
 const SYSTEM_PROMPT = fs.readFileSync(path.join(__dirname, 'skill-prompt.md'), 'utf8');
 
@@ -161,16 +167,49 @@ app.post('/api/validar', (req, res, next) => {
       }
     }
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8192,
-      // El system prompt es idéntico en cada llamada → se cachea para no pagarlo
-      // a precio completo en validaciones repetidas (ventana de 5 min).
-      system: [
-        { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }
-      ],
-      messages: [{ role: 'user', content: contentBlocks }]
-    });
+    let message;
+    try {
+      message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 8192,
+        // El system prompt es idéntico en cada llamada → se cachea para no pagarlo
+        // a precio completo en validaciones repetidas (ventana de 5 min).
+        system: [
+          { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }
+        ],
+        messages: [{ role: 'user', content: contentBlocks }]
+      });
+    } catch (primaryError) {
+      // Verificar si el error es por falta de saldo/créditos
+      const isInsufficientCredits =
+        primaryError.status === 429 ||
+        primaryError.status === 402 ||
+        (primaryError.error?.error?.type === 'insufficient_quota') ||
+        (primaryError.message && (
+          primaryError.message.includes('credit') ||
+          primaryError.message.includes('quota') ||
+          primaryError.message.includes('balance')
+        ));
+
+      if (isInsufficientCredits && secondaryApiKey && !usingSecondaryKey) {
+        console.log('[FALLBACK] API Key principal sin saldo. Cambiando a API Key secundaria...');
+        anthropic = createAnthropicClient(secondaryApiKey);
+        usingSecondaryKey = true;
+
+        // Reintentar con la API key secundaria
+        message = await anthropic.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8192,
+          system: [
+            { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }
+          ],
+          messages: [{ role: 'user', content: contentBlocks }]
+        });
+        console.log('[FALLBACK] Solicitud completada exitosamente con API Key secundaria.');
+      } else {
+        throw primaryError;
+      }
+    }
 
     // Registrar consumo de tokens para visibilidad de costos
     const u = message.usage || {};
@@ -226,4 +265,7 @@ app.post('/api/validar', (req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
   console.log(`Acceso en red local: http://192.168.80.209:${PORT}`);
+  console.log(`API Key primaria configurada: ${primaryApiKey ? 'Sí' : 'No'}`);
+  console.log(`API Key secundaria configurada: ${secondaryApiKey ? 'Sí (fallback habilitado)' : 'No'}`);
+  if (proxyUrl) console.log(`Proxy: ${proxyUrl}`);
 });

@@ -420,7 +420,9 @@
       vt.className = 'text-lg font-bold text-red-800';
       vb.textContent = 'NO APROBADO';
       vb.className = 'px-3 py-0.5 rounded-full text-xs font-semibold bg-red-200 text-red-800';
-      vs.textContent = d.documentos_faltantes?.length ? 'Faltan: ' + d.documentos_faltantes.join(', ') : 'Revise el checklist.';
+      vs.textContent = d.documentos_faltantes?.length
+        ? 'Faltan: ' + d.documentos_faltantes.map(doc => typeof doc === 'string' ? doc : doc.nombre || doc.codigo || JSON.stringify(doc)).join(', ')
+        : 'Revise el checklist.';
       vs.className = 'text-sm mt-1 text-red-700';
     } else {
       vc.className = 'rounded-2xl p-5 border flex items-start gap-4 bg-yellow-50 border-yellow-200';
