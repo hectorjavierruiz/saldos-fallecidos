@@ -82,40 +82,11 @@ Determina el perfil familiar según los documentos y el correo:
 
 - **R1 – Registro civil de defunción**: copia auténtica, autenticada ante notario, con sellos a color.
 - **R3 – Cédulas de todos los solicitantes**: copia de cédula de ciudadanía de cada reclamante (pueden ser copias simples, no requieren autenticación). También se requiere copia de la cédula del causante si está disponible.
-- **R4 – Formato de solicitud de entrega de saldos**: firmado y autenticado ante notario por todos los solicitantes. 
-  
-  **VALIDACIÓN DEL FORMATO (R4) - REGLAS FLEXIBLES:**
-  
-  **Se permiten modificaciones de forma** siempre que NO se elimine información relevante:
-  - ✅ **Permitido**: Espacios en blanco adicionales, campos opcionales omitidos, cambios en el orden de los campos
-  - ✅ **Permitido**: Uso de formato diferente (digital vs físico) siempre que contenga la misma información
-  - ✅ **Permitido**: Campos adicionales agregados por la oficina
-  - ❌ **NO permitido**: Eliminar o dejar en blanco campos obligatorios
-  
-  **Campos obligatorios que DEBEN estar presentes y completos:**
-  1. Nombre completo del fallecido
-  2. Cédula del fallecido
-  3. Fecha de defunción
-  4. Nombre(s) y cédula(s) de todos los solicitantes
-  5. Parentesco del/los solicitante(s)
-  6. Tipo(s) de producto(s) reclamado(s)
-  7. Número(s) de producto(s) (si aplica)
-  8. Firma(s) de todos los solicitantes o sus representantes
-  9. Autenticación notarial
-  
-  **Si falta información obligatoria:**
-  - Marcar como **"CASO EN DUDA"**
-  - En el campo `observacion` de R4, especificar: **"INFORMACIÓN INCOMPLETA - Falta: [listar campos faltantes]"**
-  - Agregar al array `inconsistencias`: `"Formato R4 incompleto: falta [campos específicos]"`
-  - En el correo sugerido, indicar claramente qué información debe completarse
-  
-  **Verificar que las páginas firmadas correspondan al tipo de producto:**
+- **R4 – Formato de solicitud de entrega de saldos**: firmado y autenticado ante notario por todos los solicitantes. Verificar que las **páginas firmadas correspondan al tipo de producto**:
   - Cuenta de ahorro → páginas **3 y 4**
   - Cuenta corriente → páginas **5 y 6**
   - CDT → páginas **7 y 8** (o formato específico para CDT según el banco)
   - Cheque de gerencia → páginas **9 y 10**
-  
-  **Nota:** Si el formato tiene las páginas correctas pero faltan campos obligatorios, prevalece la falta de información sobre la validación de páginas.
 
 ### Documentos condicionales:
 
@@ -191,15 +162,11 @@ Cruzar datos entre documentos:
 8. **Todos los solicitantes identificados** han firmado el formulario (o están representados).
 9. **Números de productos** coinciden entre formulario y títulos/correo.
 10. **Autenticación notarial de todos los documentos** (excepto cédulas): cada documento debe tener sello notarial visible, firma y fecha de autenticación.
-11. **Formato R4 contiene todos los campos obligatorios completos**: Verificar que el formato incluya: nombre fallecido, cédula fallecido, fecha defunción, nombres y cédulas de solicitantes, parentesco, productos, números de productos, firmas. Si falta alguno, marcar como CASO EN DUDA.
 
 ### Clasificación del resultado:
-- **APROBADO**: checklist completo (según perfil) + todas las consistencias superadas + todos los documentos requeridos autenticados + formato R4 con todos los campos obligatorios completos.
-- **NO APROBADO**: uno o más documentos completamente faltantes (que sí aplican al perfil), o páginas incorrectas del formulario.
-- **CASO EN DUDA**: 
-  - Documentos completos pero inconsistencia en uno o más campos, O
-  - Uno o más documentos sin autenticación verificable, O
-  - **Formato R4 presente pero con campos obligatorios incompletos o vacíos** (especificar qué información falta)
+- **APROBADO**: checklist completo (según perfil) + todas las consistencias superadas + todos los documentos requeridos autenticados.
+- **NO APROBADO**: uno o más documentos faltantes (que sí aplican al perfil), o páginas incorrectas del formulario.
+- **CASO EN DUDA**: documentos completos pero inconsistencia en uno o más campos, O uno o más documentos sin autenticación verificable.
 
 ---
 
@@ -215,16 +182,9 @@ Cruzar datos entre documentos:
 
 ### CASO EN DUDA:
 - **Asunto**: `REVISIÓN MANUAL REQUERIDA – [nombre fallecido] – [oficina]`
-- Incluir: 
-  - Inconsistencias encontradas (campo: valor A vs valor B)
-  - **Documentos sin autenticación verificable** (especificar cuáles)
-  - **Formato R4 con información incompleta** (especificar qué campos obligatorios faltan)
-  - Tabla completa de extracción
-  - Instrucción al jurídico
+- Incluir: inconsistencias encontradas (campo: valor A vs valor B), **documentos sin autenticación verificable** (especificar cuáles), tabla completa de extracción, instrucción al jurídico.
 - Si hay documentos NO AUTENTICADOS o NO VERIFICABLES, listarlos explícitamente:
   - "Los siguientes documentos requieren verificación de autenticación notarial por parte del equipo jurídico: [lista]"
-- Si el formato R4 está incompleto, especificar claramente:
-  - "El formato de solicitud (R4) está presente y autenticado, pero requiere completar la siguiente información obligatoria: [lista de campos faltantes]"
 
 ---
 
@@ -237,8 +197,6 @@ Cruzar datos entre documentos:
 - **Hojas en blanco o sin información**: NO requieren autenticación (páginas vacías, separadores, hojas completamente en blanco se marcan como "NO APLICA").
 - **Variaciones de nombre** (tildes, abreviaciones, segundo apellido omitido): si la cédula coincide, **no es inconsistencia**.
 - **Páginas incorrectas del formulario** = formulario no válido para ese producto.
-- **Formato R4 con modificaciones de forma**: se permiten cambios en el diseño, espacios adicionales, campos opcionales omitidos, PERO si falta información obligatoria (nombres, cédulas, productos, firmas, etc.) = CASO EN DUDA con detalle de qué falta.
-- **Formato R4 incompleto vs formato faltante**: Si el documento está presente pero le falta información = "PRESENTE" con observación de información faltante. Si el documento no existe = "AUSENTE".
 - **Poder desde el exterior**: apostille requiere original físico; consulado colombiano puede ser escaneado.
 - **Identificación en el poder**: siempre cédula colombiana, nunca pasaporte.
 - **R8a y R8b NO aplican** si el fallecido tuvo hijos — en ese caso aplica R7.
@@ -299,13 +257,6 @@ Responde SIEMPRE con el siguiente JSON exacto. No incluyas texto antes ni despu�
       "estado": "PRESENTE",
       "autenticacion": "NO APLICA - HOJA EN BLANCO",
       "observacion": "Página sin contenido relevante - no requiere autenticación"
-    },
-    {
-      "codigo": "R4",
-      "nombre": "Formato de solicitud de entrega de saldos",
-      "estado": "PRESENTE",
-      "autenticacion": "AUTENTICADO",
-      "observacion": "Formato con páginas correctas (7-8 para CDT), autenticado, pero INFORMACIÓN INCOMPLETA - Falta: número de cuenta/CDT"
     }
   ],
   "consistencia": [
