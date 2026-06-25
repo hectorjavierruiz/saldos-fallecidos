@@ -1,6 +1,6 @@
 {
   "name": "saldos-fallecidos-frontend",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Frontend para validación de documentos - Saldos Fallecidos Banco de Occidente",
   "main": "server.js",
   "scripts": {
